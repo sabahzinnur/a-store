@@ -6,7 +6,7 @@ export default defineConfig({
         lib: {
             entry: 'src/main.ts',
             name: 'Small Storage',
-            fileName: (format) => `zstore.${format}.js`,
+            fileName: (format) => `a-store.${format}.js`,
         },
         rollupOptions: {
             // Укажите зависимости, которые не должны быть включены в вашу библиотеку

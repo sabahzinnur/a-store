@@ -3,7 +3,7 @@
 
 ## Installation
 ```
-npm install --save zstore
+npm install --save a-store
 ```
 
 ## Plugins

@@ -1,9 +1,9 @@
 {
-  "name": "zstore",
+  "name": "a-store",
   "version": "1.0.0",
-  "main": "dist/zstore.umd.js",
-  "module": "dist/zstore.es.js",
-  "types": "dist/zstore.d.ts",
+  "main": "dist/a-store.umd.js",
+  "module": "dist/a-store.es.js",
+  "types": "dist/a-store.d.ts",
   "files": [
     "dist"
   ],
@@ -23,16 +23,19 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/sabahzinnur/zstore.git"
+    "url": "git+https://github.com/sabahzinnur/a-store.git"
   },
   "keywords": [
-    "keyword1",
-    "keyword2"
+    "store",
+    "js",
+    "storage",
+    "flexible store",
+    "a-store"
   ],
   "author": "@RustamZinnurov <rustam.zinnurof@gmail.com>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/sabahzinnur/zstore/issues"
+    "url": "https://github.com/sabahzinnur/a-store/issues"
   },
-  "homepage": "https://github.com/sabahzinnur/zstore#readme"
+  "homepage": "https://github.com/sabahzinnur/a-store#readme"
 }
