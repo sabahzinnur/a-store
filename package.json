@@ -1,0 +1,38 @@
+{
+  "name": "zstore",
+  "version": "1.0.0",
+  "main": "dist/zstore.umd.js",
+  "module": "dist/zstore.es.js",
+  "types": "dist/zstore.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "test": "vitest"
+  },
+  "devDependencies": {
+    "jsdom": "^25.0.1",
+    "typescript": "^5.5.3",
+    "vite": "^5.4.1",
+    "vite-plugin-dts": "^4.2.3",
+    "vitest": "^2.1.1",
+    "@types/node": "^22.7.4"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sabahzinnur/zstore.git"
+  },
+  "keywords": [
+    "keyword1",
+    "keyword2"
+  ],
+  "author": "@RustamZinnurov <rustam.zinnurof@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/sabahzinnur/zstore/issues"
+  },
+  "homepage": "https://github.com/sabahzinnur/zstore#readme"
+}
