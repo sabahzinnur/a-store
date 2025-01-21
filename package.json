@@ -1,6 +1,6 @@
 {
   "name": "@lightway/a-store",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "main": "dist/a-store.umd.js",
   "module": "dist/a-store.es.js",
   "types": "dist/a-store.d.ts",

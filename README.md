@@ -3,7 +3,7 @@
 
 ## Installation
 ```
-npm install --save a-store
+npm install --save @lightway/a-store
 ```
 
 ## Plugins
