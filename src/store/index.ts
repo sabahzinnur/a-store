@@ -11,11 +11,14 @@ export class Store<T extends Object> {
     private readonly plugins: StorePlugin<T>[] = []
     private readonly initialStateValue: T
     private readonly immutable
+    private readonly rawState: T
+    private lockedProperties: Set<keyof T> = new Set()
 
     public constructor(state: T, options?: {
         plugins?: StorePlugin<T>[],
         immutable?: boolean
     }) {
+        this.rawState = state
         this.state = state
         this.initialStateValue = JSON.parse(JSON.stringify(state))
 
@@ -36,7 +39,7 @@ export class Store<T extends Object> {
 
     public set<K extends keyof T>(key: K, value: T[K]) {
         if (this.immutable) this.unlockStateProp(key)
-        this.state[key] = value
+        this.rawState[key] = value
         if (this.immutable) this.lockStateProp(key)
         this.onStateChange(key, value)
     }
@@ -60,23 +63,42 @@ export class Store<T extends Object> {
     }
 
     private lock() {
+        if (this.immutable) this.lockState()
         Object.preventExtensions(this.state)
         Object.preventExtensions(this)
         Object.freeze(this)
-        if (this.immutable) this.lockState()
     }
 
     private lockState() {
-        (Object.keys(this.state) as Array<keyof T>).forEach((key => {
+        const handler = {
+            set: (target, property, value) => {
+                const key = property as keyof T
+                if (this.lockedProperties.has(key)) {
+                    console.warn(`[Store] Attempted to directly modify locked state property "${String(property)}". Use store.set() method instead.`)
+                    return false
+                }
+                target[key] = value
+                return true
+            },
+            deleteProperty: (target, property) => {
+                console.warn(`[Store] Attempted to delete state property "${String(property)}". Direct deletion is not allowed.`)
+                return false
+            }
+        }
+
+        this.state = new Proxy(this.rawState, handler)
+
+        // Блокируем все свойства по умолчанию
+        ;(Object.keys(this.state) as Array<keyof T>).forEach((key => {
             this.lockStateProp(key)
         }))
     }
 
     private lockStateProp<K extends keyof T>(key: K) {
-        Object.defineProperty(this.state, key, {writable: false});
+        this.lockedProperties.add(key)
     }
 
     private unlockStateProp<K extends keyof T>(key: K) {
-        Object.defineProperty(this.state, key, {writable: true});
+        this.lockedProperties.delete(key)
     }
 }
