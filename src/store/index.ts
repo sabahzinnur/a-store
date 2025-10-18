@@ -60,11 +60,10 @@ export class Store<T extends Object> {
     }
 
     private lock() {
-        if (!this.immutable) return
         Object.preventExtensions(this.state)
         Object.preventExtensions(this)
         Object.freeze(this)
-        this.lockState()
+        if (this.immutable) this.lockState()
     }
 
     private lockState() {
