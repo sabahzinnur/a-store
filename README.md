@@ -191,7 +191,7 @@ store.set('count', 10)
 
 ### Disable Immutability
 
-You can disable immutability if needed:
+You can disable immutability if needed for performance gains:
 
 ```typescript
 const store = defineStore(
@@ -199,9 +199,11 @@ const store = defineStore(
   { immutable: false }
 )
 
-// ✅ Direct mutations are now allowed
+// ✅ Direct mutations are now allowed at runtime
 store.state.count = 10
 ```
+
+**Note:** Disabling immutability improves performance by removing runtime proxy overhead, but TypeScript will still show type errors for direct property assignments. This provides compile-time safety while allowing runtime flexibility when needed.
 
 ## Advanced Usage
 
@@ -266,6 +268,27 @@ store.set('name', 'John')
 store.set('name', 123)
 store.set('invalid', 'value')
 ```
+
+### Direct Property Assignment
+
+TypeScript will prevent direct property assignment at compile time, as the store state is typed as `Readonly`:
+
+```typescript
+// ❌ TypeScript error: Cannot assign to 'name' because it is a read-only property
+store.state.name = 'Jane'
+
+// ❌ TypeScript error occurs even when immutability is disabled
+const mutableStore = defineStore<UserState>(
+  { id: 0, name: '', email: '' },
+  { immutable: false }
+)
+mutableStore.state.name = 'Jane' // Still a TypeScript error
+
+// ✅ Always use set method
+store.set('name', 'Jane')
+```
+
+Note: Even with `immutable: false`, TypeScript will still show type errors for direct assignments because the store interface is readonly. This provides an additional layer of type safety at compile time.
 
 ## License
 
