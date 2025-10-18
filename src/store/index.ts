@@ -6,6 +6,10 @@ export interface StorePlugin<T extends Object> {
     onReset(store: Store<T>): Promise<void>
 }
 
+export interface Logger {
+    warn(message: string): void
+}
+
 export class Store<T extends Object> {
     public state: T
     private readonly plugins: StorePlugin<T>[] = []
@@ -13,10 +17,12 @@ export class Store<T extends Object> {
     private readonly immutable
     private readonly rawState: T
     private lockedProperties: Set<keyof T> = new Set()
+    private readonly logger: Logger
 
     public constructor(state: T, options?: {
         plugins?: StorePlugin<T>[],
-        immutable?: boolean
+        immutable?: boolean,
+        logger?: Logger
     }) {
         this.rawState = state
         this.state = state
@@ -26,6 +32,7 @@ export class Store<T extends Object> {
             this.plugins = options.plugins
         }
         this.immutable = !!options?.immutable
+        this.logger = options?.logger ?? console
         this.lock()
         this.onCreate()
     }
@@ -74,14 +81,13 @@ export class Store<T extends Object> {
             set: (target, property, value) => {
                 const key = property as keyof T
                 if (this.lockedProperties.has(key)) {
-                    console.warn(`[Store] Attempted to directly modify locked state property "${String(property)}". Use store.set() method instead.`)
-
+                    this.logger.warn(`[Store] Attempted to directly modify locked state property "${String(property)}". Use store.set() method instead.`)
                 }
                 target[key] = value
                 return true
             },
             deleteProperty: (target, property) => {
-                console.warn(`[Store] Attempted to delete state property "${String(property)}". Direct deletion is not allowed.`)
+                this.logger.warn(`[Store] Attempted to delete state property "${String(property)}". Direct deletion is not allowed.`)
                 return true
             }
         }
