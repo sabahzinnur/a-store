@@ -6,22 +6,50 @@ export interface StorePlugin<T extends Object> {
     onReset(store: Store<T>): Promise<void>
 }
 
+export interface Logger {
+    warn(message: string): void
+}
+
 export class Store<T extends Object> {
     public state: T
-    private readonly plugins: StorePlugin<T>[] = []
     private readonly initialStateValue: T
+    private readonly plugins: StorePlugin<T>[]
+    private readonly immutable: boolean
+    private readonly lockedProperties: Set<keyof T> = new Set()
+    private readonly logger: Logger
 
     public constructor(state: T, options?: {
-        plugins?: StorePlugin<T>[]
+        plugins?: StorePlugin<T>[],
+        immutable?: boolean,
+        logger?: Logger
     }) {
-        this.state = state
-        this.initialStateValue = JSON.parse(JSON.stringify(state))
+        this.logger = options?.logger ?? console
+        this.immutable = options?.immutable ?? true
+        this.plugins = options?.plugins ?? []
 
-        if (options?.plugins) {
-            this.plugins = options.plugins
-        }
+        this.initialStateValue = JSON.parse(JSON.stringify(state))
+        this.state = this.createState(state)
+
         this.lock()
+
         this.onCreate()
+    }
+
+    private lock() {
+        if (this.immutable) {
+            ;(Object.keys(this.state) as Array<keyof T>).forEach((key => {
+                this.lockStateProp(key)
+            }))
+        }
+        Object.preventExtensions(this.state)
+
+        Object.freeze(this)
+    }
+
+    private onCreate() {
+        this.plugins.forEach(async plugin => {
+            await plugin.onCreate(this)
+        })
     }
 
     public reset() {
@@ -31,17 +59,17 @@ export class Store<T extends Object> {
         this.onReset()
     }
 
-    public set<K extends keyof T>(key: K, value: T[K]) {
-        this.unlockStateProp(key)
-        this.state[key] = value
-        this.lockStateProp(key)
-        this.onStateChange(key, value)
+    private onReset() {
+        this.plugins.forEach(async plugin => {
+            await plugin.onReset(this);
+        })
     }
 
-    private onCreate() {
-        this.plugins.forEach(async plugin => {
-            await plugin.onCreate(this)
-        })
+    public set<K extends keyof T>(key: K, value: T[K]) {
+        if (this.immutable) this.unlockStateProp(key)
+        this.state[key] = value
+        if (this.immutable) this.lockStateProp(key)
+        this.onStateChange(key, value)
     }
 
     private onStateChange<K extends keyof T>(key: K, value: T[K]) {
@@ -50,30 +78,33 @@ export class Store<T extends Object> {
         })
     }
 
-    private onReset() {
-        this.plugins.forEach(async plugin => {
-            await plugin.onReset(this);
-        })
-    }
+    private createState(state: T) {
+        if (!this.immutable) return state
 
-    private lock() {
-        Object.preventExtensions(this.state)
-        Object.preventExtensions(this)
-        Object.freeze(this)
-        this.lockState()
-    }
+        const handler: ProxyHandler<T> = {
+            set: (target, property, value) => {
+                const key = property as keyof T
+                if (this.lockedProperties.has(key)) {
+                    this.logger.warn(`[Store] Attempted to directly modify locked state property "${String(property)}". Use store.set() method instead.`)
+                    return true
+                }
+                target[key] = value
+                return true
+            },
+            deleteProperty: (_, property) => {
+                this.logger.warn(`[Store] Attempted to delete state property "${String(property)}". State property deletion is not allowed.`)
+                return true
+            }
+        }
 
-    private lockState() {
-        (Object.keys(this.state) as Array<keyof T>).forEach((key => {
-            this.lockStateProp(key)
-        }))
+        return new Proxy(state, handler)
     }
 
     private lockStateProp<K extends keyof T>(key: K) {
-        Object.defineProperty(this.state, key, {writable: false});
+        this.lockedProperties.add(key)
     }
 
     private unlockStateProp<K extends keyof T>(key: K) {
-        Object.defineProperty(this.state, key, {writable: true});
+        this.lockedProperties.delete(key)
     }
 }

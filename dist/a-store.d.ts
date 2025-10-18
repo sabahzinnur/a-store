@@ -1,6 +1,12 @@
 export declare function defineStore<T extends Object>(state: T, options?: {
     plugins?: StorePlugin<T>[];
-}): Store<T>;
+    immutable?: boolean;
+    logger?: Logger;
+}): Readonly<Store<Readonly<T>>>;
+
+declare interface Logger {
+    warn(message: string): void;
+}
 
 export declare class PersistLocalStoragePlugin<T extends Object> implements StorePlugin<T> {
     private readonly itemName;
@@ -20,18 +26,23 @@ export declare class PersistSessionStoragePlugin<T extends Object> implements St
 
 export declare class Store<T extends Object> {
     state: T;
-    private readonly plugins;
     private readonly initialStateValue;
+    private readonly plugins;
+    private readonly immutable;
+    private readonly lockedProperties;
+    private readonly logger;
     constructor(state: T, options?: {
         plugins?: StorePlugin<T>[];
+        immutable?: boolean;
+        logger?: Logger;
     });
-    reset(): void;
-    set<K extends keyof T>(key: K, value: T[K]): void;
-    private onCreate;
-    private onStateChange;
-    private onReset;
     private lock;
-    private lockState;
+    private onCreate;
+    reset(): void;
+    private onReset;
+    set<K extends keyof T>(key: K, value: T[K]): void;
+    private onStateChange;
+    private createState;
     private lockStateProp;
     private unlockStateProp;
 }
