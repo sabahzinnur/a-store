@@ -27,8 +27,8 @@ export class Store<T extends Object> {
         this.immutable = options?.immutable ?? true
         this.plugins = options?.plugins ?? []
 
-        this.state = this.createState(state)
         this.initialStateValue = JSON.parse(JSON.stringify(state))
+        this.state = this.createState(state)
 
         this.lock()
 
