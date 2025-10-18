@@ -71,7 +71,6 @@ export class Store<T extends Object> {
 
     private lock() {
         if (this.immutable) this.lockState()
-        // Object.preventExtensions(this.state)
         Object.preventExtensions(this)
         Object.freeze(this)
     }
@@ -82,7 +81,6 @@ export class Store<T extends Object> {
                 const key = property as keyof T
                 if (this.lockedProperties.has(key)) {
                     this.logger.warn(`[Store] Attempted to directly modify locked state property "${String(property)}". Use store.set() method instead.`)
-
                 }
                 return true
             },
@@ -94,7 +92,6 @@ export class Store<T extends Object> {
 
         this.state = new Proxy(this.rawState, handler)
 
-        // Блокируем все свойства по умолчанию
         ;(Object.keys(this.state) as Array<keyof T>).forEach((key => {
             this.lockStateProp(key)
         }))
