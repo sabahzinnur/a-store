@@ -12,11 +12,10 @@ export interface Logger {
 
 export class Store<T extends Object> {
     public state: T
-    private readonly plugins: StorePlugin<T>[] = []
     private readonly initialStateValue: T
-    private readonly immutable
-    private readonly rawState: T
-    private lockedProperties: Set<keyof T> = new Set()
+    private readonly plugins: StorePlugin<T>[]
+    private readonly immutable: boolean
+    private readonly lockedProperties: Set<keyof T> = new Set()
     private readonly logger: Logger
 
     public constructor(state: T, options?: {
@@ -24,17 +23,32 @@ export class Store<T extends Object> {
         immutable?: boolean,
         logger?: Logger
     }) {
-        this.rawState = state
-        this.state = state
+        this.logger = options?.logger ?? console
+        this.immutable = options?.immutable ?? true
+        this.plugins = options?.plugins ?? []
+
+        this.state = this.createState(state)
         this.initialStateValue = JSON.parse(JSON.stringify(state))
 
-        if (options?.plugins) {
-            this.plugins = options.plugins
-        }
-        this.immutable = !!options?.immutable
-        this.logger = options?.logger ?? console
         this.lock()
+
         this.onCreate()
+    }
+
+    private lock() {
+        if (this.immutable) {
+            ;(Object.keys(this.state) as Array<keyof T>).forEach((key => {
+                this.lockStateProp(key)
+            }))
+        }
+
+        Object.freeze(this)
+    }
+
+    private onCreate() {
+        this.plugins.forEach(async plugin => {
+            await plugin.onCreate(this)
+        })
     }
 
     public reset() {
@@ -44,17 +58,17 @@ export class Store<T extends Object> {
         this.onReset()
     }
 
-    public set<K extends keyof T>(key: K, value: T[K]) {
-        if (this.immutable) this.unlockStateProp(key)
-        this.rawState[key] = value
-        if (this.immutable) this.lockStateProp(key)
-        this.onStateChange(key, value)
+    private onReset() {
+        this.plugins.forEach(async plugin => {
+            await plugin.onReset(this);
+        })
     }
 
-    private onCreate() {
-        this.plugins.forEach(async plugin => {
-            await plugin.onCreate(this)
-        })
+    public set<K extends keyof T>(key: K, value: T[K]) {
+        if (this.immutable) this.unlockStateProp(key)
+        this.state[key] = value
+        if (this.immutable) this.lockStateProp(key)
+        this.onStateChange(key, value)
     }
 
     private onStateChange<K extends keyof T>(key: K, value: T[K]) {
@@ -63,19 +77,9 @@ export class Store<T extends Object> {
         })
     }
 
-    private onReset() {
-        this.plugins.forEach(async plugin => {
-            await plugin.onReset(this);
-        })
-    }
+    private createState(state: T) {
+        if (!this.immutable) return state
 
-    private lock() {
-        if (this.immutable) this.lockState()
-        Object.preventExtensions(this)
-        Object.freeze(this)
-    }
-
-    private lockState() {
         const handler: ProxyHandler<T> = {
             set: (_, property, __) => {
                 const key = property as keyof T
@@ -90,11 +94,7 @@ export class Store<T extends Object> {
             }
         }
 
-        this.state = new Proxy(this.rawState, handler)
-
-        ;(Object.keys(this.state) as Array<keyof T>).forEach((key => {
-            this.lockStateProp(key)
-        }))
+        return new Proxy(state, handler)
     }
 
     private lockStateProp<K extends keyof T>(key: K) {
