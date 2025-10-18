@@ -77,16 +77,16 @@ export class Store<T extends Object> {
     }
 
     private lockState() {
-        const handler = {
-            set: (target, property, value) => {
+        const handler: ProxyHandler<T> = {
+            set: (_, property, __) => {
                 const key = property as keyof T
                 if (this.lockedProperties.has(key)) {
                     this.logger.warn(`[Store] Attempted to directly modify locked state property "${String(property)}". Use store.set() method instead.`)
+
                 }
-                target[key] = value
                 return true
             },
-            deleteProperty: (target, property) => {
+            deleteProperty: (_, property) => {
                 this.logger.warn(`[Store] Attempted to delete state property "${String(property)}". Direct deletion is not allowed.`)
                 return true
             }
