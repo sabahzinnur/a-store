@@ -75,14 +75,14 @@ export class Store<T extends Object> {
                 const key = property as keyof T
                 if (this.lockedProperties.has(key)) {
                     console.warn(`[Store] Attempted to directly modify locked state property "${String(property)}". Use store.set() method instead.`)
-                    return false
+
                 }
                 target[key] = value
                 return true
             },
             deleteProperty: (target, property) => {
                 console.warn(`[Store] Attempted to delete state property "${String(property)}". Direct deletion is not allowed.`)
-                return false
+                return true
             }
         }
 
