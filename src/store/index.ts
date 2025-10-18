@@ -81,11 +81,13 @@ export class Store<T extends Object> {
         if (!this.immutable) return state
 
         const handler: ProxyHandler<T> = {
-            set: (_, property, __) => {
+            set: (target, property, value) => {
                 const key = property as keyof T
                 if (this.lockedProperties.has(key)) {
                     this.logger.warn(`[Store] Attempted to directly modify locked state property "${String(property)}". Use store.set() method instead.`)
+                    return true
                 }
+                target[key] = value
                 return true
             },
             deleteProperty: (_, property) => {
