@@ -10,9 +10,11 @@ export class Store<T extends Object> {
     public state: T
     private readonly plugins: StorePlugin<T>[] = []
     private readonly initialStateValue: T
+    private readonly immutable
 
     public constructor(state: T, options?: {
-        plugins?: StorePlugin<T>[]
+        plugins?: StorePlugin<T>[],
+        immutable?: boolean
     }) {
         this.state = state
         this.initialStateValue = JSON.parse(JSON.stringify(state))
@@ -20,6 +22,7 @@ export class Store<T extends Object> {
         if (options?.plugins) {
             this.plugins = options.plugins
         }
+        this.immutable = !!options?.immutable
         this.lock()
         this.onCreate()
     }
@@ -32,9 +35,9 @@ export class Store<T extends Object> {
     }
 
     public set<K extends keyof T>(key: K, value: T[K]) {
-        this.unlockStateProp(key)
+        if (this.immutable) this.unlockStateProp(key)
         this.state[key] = value
-        this.lockStateProp(key)
+        if (this.immutable) this.lockStateProp(key)
         this.onStateChange(key, value)
     }
 
@@ -57,6 +60,7 @@ export class Store<T extends Object> {
     }
 
     private lock() {
+        if (!this.immutable) return
         Object.preventExtensions(this.state)
         Object.preventExtensions(this)
         Object.freeze(this)
