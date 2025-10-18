@@ -71,7 +71,7 @@ export class Store<T extends Object> {
 
     private lock() {
         if (this.immutable) this.lockState()
-        Object.preventExtensions(this.state)
+        // Object.preventExtensions(this.state)
         Object.preventExtensions(this)
         Object.freeze(this)
     }
@@ -87,7 +87,7 @@ export class Store<T extends Object> {
                 return true
             },
             deleteProperty: (_, property) => {
-                this.logger.warn(`[Store] Attempted to delete state property "${String(property)}". Direct deletion is not allowed.`)
+                this.logger.warn(`[Store] Attempted to delete state property "${String(property)}". State property deletion is not allowed.`)
                 return true
             }
         }
