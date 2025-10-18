@@ -1,17 +1,25 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { Store, type StorePlugin } from '../index'
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest'
+import {Store, type StorePlugin} from '../index'
 
 interface TestState {
     count: number
     name: string
 }
 
+const logger = {
+    warn: vi.fn()
+}
+
 describe('Store', () => {
     let store: Store<TestState>
-    const initialState: TestState = { count: 0, name: 'initial' }
+    const initialState: TestState = {count: 0, name: 'initial'}
 
     beforeEach(() => {
-        store = new Store<TestState>({ ...initialState })
+        store = new Store<TestState>({...initialState}, {logger})
+    })
+
+    afterEach(() => {
+        vi.clearAllMocks()
     })
 
     it('should initialize with given state', () => {
@@ -29,7 +37,7 @@ describe('Store', () => {
         expect(store.state.count).toBe(10)
     })
 
-    it('should be prevented extensions after initialization', () => {
+    it('store should be prevented extensions after initialization', () => {
         expect(Object.isExtensible(store)).toBe(false)
     })
 
@@ -41,39 +49,46 @@ describe('Store', () => {
         expect(Object.isFrozen(store)).toBe(true)
     })
 
-    it('should unlock and lock store state properties correctly during set', () => {
-        const countBefore = store.state.count
-        try {
-            store.state.count = 999
-        } catch (e) {
-            // nothing to do
-        }
-        expect(store.state.count).toBe(countBefore)
 
-        store.set('count', 10)
-        expect(store.state.count).toBe(10)
-
-        try {
-            store.state.count = 999
-        } catch (e) {
-            // nothing to do
-        }
-        expect(store.state.count).toBe(10)
-    })
-
-    it('should not allow direct modification of stare properties', () => {
-        try {
-            store.state.count = 20
-        } catch (e) {
-            // nothing to do
-        }
+    it('should not allow direct modification of state properties, and log warn', () => {
+        store.state.count = 20
+        expect(logger.warn).toBeCalled()
         expect(store.state.count).toBe(0)
     })
+
+    it('should throw error and log warn then attempt delete state property', () => {
+        try {
+            //@ts-ignore
+            delete store.state.count
+        } catch (e) {
+            expect(e).toBeInstanceOf(TypeError)
+        }
+        expect(logger.warn).toBeCalled()
+        expect(store.state.count).toBe(0)
+    })
+
+    it('should throw error then attempt add new property to state', () => {
+        try {
+            //@ts-ignore
+            store.state.foo = 'bar'
+        } catch (e) {
+            expect(e).toBeInstanceOf(TypeError)
+        }
+    })
+
+    it('should allow direct modification of state properties without warn on immutable disabled ', () => {
+        store = new Store<TestState>({...initialState}, {logger, immutable: false})
+
+        store.state.count = 20
+        expect(logger.warn).not.toBeCalled()
+        expect(store.state.count).toBe(20)
+    })
+
 })
 
 describe('Store plugins common features', () => {
     let store: Store<TestState>
-    const initialState: TestState = { count: 0, name: 'initial' }
+    const initialState: TestState = {count: 0, name: 'initial'}
 
     it('should call onCreate for all plugins', async () => {
         const plugin: StorePlugin<TestState> = {
@@ -81,7 +96,7 @@ describe('Store plugins common features', () => {
             onStateChanged: vi.fn().mockResolvedValue(undefined),
             onReset: vi.fn().mockResolvedValue(undefined),
         }
-        store = new Store<TestState>(initialState, { plugins: [plugin] })
+        store = new Store<TestState>(initialState, {plugins: [plugin]})
 
         expect(plugin.onCreate).toHaveBeenCalledWith(store)
     })
@@ -92,7 +107,7 @@ describe('Store plugins common features', () => {
             onStateChanged: vi.fn().mockResolvedValue(undefined),
             onReset: vi.fn().mockResolvedValue(undefined),
         }
-        store = new Store<TestState>(initialState, { plugins: [plugin] })
+        store = new Store<TestState>(initialState, {plugins: [plugin]})
 
         store.set('name', 'updated')
         expect(plugin.onStateChanged).toHaveBeenCalledWith('name', 'updated', store)
@@ -104,7 +119,7 @@ describe('Store plugins common features', () => {
             onStateChanged: vi.fn().mockResolvedValue(undefined),
             onReset: vi.fn().mockResolvedValue(undefined),
         }
-        store = new Store<TestState>(initialState, { plugins: [plugin] })
+        store = new Store<TestState>(initialState, {plugins: [plugin]})
 
         store.reset()
         expect(plugin.onReset).toHaveBeenCalledWith(store)

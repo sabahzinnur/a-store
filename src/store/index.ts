@@ -41,6 +41,7 @@ export class Store<T extends Object> {
                 this.lockStateProp(key)
             }))
         }
+        Object.preventExtensions(this.state)
 
         Object.freeze(this)
     }
